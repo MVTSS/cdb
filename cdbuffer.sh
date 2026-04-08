@@ -1,10 +1,4 @@
-#!/usr/bin/env bash
-
-#sed -i '3d,3i\3: test' cdbuffer
-
-#TODO
-#
-
+#!/usr/bin/env bash 
 
 # START FUNCTIONS ##############################
 _cdb_internal() {
@@ -30,7 +24,7 @@ _cdb_internal() {
 	Add /path/to/remember to the macro 1
 	$0 -e 1
 	Empty macro 1
-EOF
+	EOF
 	return 0
     }
 
@@ -65,8 +59,8 @@ list_func() {
 
 add_func() {
     #Remplace le ~ par $HOME pour ne pas trigger le -d (il est sensible)
-    MPATH=${~MPATH}
-    #MPATH=${MPATH/#~/$HOME}
+    #MPATH=${~MPATH}
+    MPATH=${MPATH/#~/$HOME}
     if [ -d "$MPATH" ]; then
 	sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
 	sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
@@ -135,36 +129,11 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "$SCRIPT_PATH")" && pwd)"
 cdbuffer="${SCRIPT_DIR}/cdbuffer"
 cdbuffercolor="${SCRIPT_DIR}/cdbuffercolor"
 
-
 # Création si ça n'est pas déjà fait des buffer
 if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
     echo "Init..."
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffer"
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffercolor"
-
-    case "$(basename $SHELL)" in
-	zsh)
-	    $RCNAME=".zshrc"
-	    ;;
-	bash)
-	    $RCNAME=".bashrc"
-	    ;;
-	*)
-	    echo "Erreur: Pas de fichier .*rc trouvé"
-	    exit(-1)
-	    ;;
-    esac
-
-    echo $RCNAME << EOF
-
-    # For cdb commandlet
-    source /usr/local/sbin/cdbuffer.sh
-    cdb() {
-	_cdb_internal "$@"
-    }
-
-    EOF
-
     reset_func
 fi
 
