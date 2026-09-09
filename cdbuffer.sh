@@ -1,5 +1,11 @@
 #!/usr/bin/env bash 
 
+#sed -i '3d,3i\3: test' cdbuffer
+
+#TODO
+#
+
+
 # START FUNCTIONS ##############################
 _cdb_internal() {
     usage() {
@@ -18,13 +24,13 @@ _cdb_internal() {
 	-h, --help		Print this message
 
 	Examples:
-	$0 1
+	cdb 1
 	Go to the path associated to macro 1
-	$0 -a 1:/path/to/remember
+	cdb -a 1:/path/to/remember
 	Add /path/to/remember to the macro 1
-	$0 -e 1
+	cdb -e 1
 	Empty macro 1
-	EOF
+EOF
 	return 0
     }
 
@@ -59,8 +65,8 @@ list_func() {
 
 add_func() {
     #Remplace le ~ par $HOME pour ne pas trigger le -d (il est sensible)
-    #MPATH=${~MPATH}
-    MPATH=${MPATH/#~/$HOME}
+    MPATH=${~MPATH}
+    #MPATH=${MPATH/#~/$HOME}
     if [ -d "$MPATH" ]; then
 	sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
 	sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
@@ -120,6 +126,7 @@ goto() {
     return 1
 }
 
+
 # END FUNCTIONS ################################
 
 SCRIPT_PATH="${BASH_SOURCE[0]:-${(%):-%x}}"
@@ -165,7 +172,7 @@ red=$'\033[0;31m'
 green=$'\033[0;32m'
 nc=$'\033[0m'
 
-
+help=0
 
 while true; do
     case "$1" in
@@ -183,6 +190,7 @@ while true; do
 	-p | --print)
 	    LINE=$2
 	    print_func
+	    return 0
 	    shift 2
 	    ;;
 	-l | --list) 
@@ -199,6 +207,7 @@ while true; do
 	    ;;
 	-h | --help) 
 	    usage
+	    help=1
 	    shift
 	    ;;
 	--)
@@ -222,7 +231,7 @@ if [ $# -gt 1 ]; then
     return 1
 fi
 
-if [ $# -eq 0 ]; then
+if [ $# -eq 0 ] && [ $help -eq 0 ]; then
     list_func_color
     return 0
 fi
