@@ -1,11 +1,5 @@
 #!/usr/bin/env bash 
 
-#sed -i '3d,3i\3: test' cdbuffer
-
-#TODO
-#
-
-
 # START FUNCTIONS ##############################
 _cdb_internal() {
     usage() {
@@ -22,6 +16,7 @@ Options:
 	-r, --reset		Empty all macros
 	-p, --print		Print the path associated to the macro. Useful as a substitution for pwd.
 	-h, --help		Print this message
+	--uninstall		Uninstall cdb
 
 Examples:
 	cdb 1
@@ -46,9 +41,11 @@ confirmation() {
 	    IS_OK=true
 	    ;;
 	[Nn]*)
+		is_param=1
 	    ;;
 	*)
 	    echo "Please answer Y or N."
+		is_param=1
 	    ;;
     esac
 }
@@ -66,7 +63,7 @@ list_func() {
 
 
 add_func() {
-    #Remplace le ~ par $HOME pour ne pas trigger le -d (il est sensible)
+	# Replace the ~ by $HOME to not trigger the -d (sensible)
     case $ACT_SHELL in
         zsh)    MPATH=${~MPATH} ;;
         bash)   MPATH=${MPATH/#~/$HOME} ;;
@@ -114,7 +111,7 @@ print_func() {
 goto() {
     line_file=$(sed -n "${LINE}p" $cdbuffer)
     IFS=':' read -r LINE MPATH <<< "$line_file" || return 1
-    #Enlève l'espace inutile
+    # Rid of useless space
     MPATH="${MPATH# }"
 
 
@@ -143,6 +140,7 @@ case "$(basename "$SHELL")" in
     *)      echo "Error : cdb is only available with bash or zsh at the moment."; exit 1; ;;
 esac
 
+cdbuffersh="${SCRIPT_DIR}/cdbuffer.sh"
 cdbuffer="${SCRIPT_DIR}/cdbuffer"
 cdbuffercolor="${SCRIPT_DIR}/cdbuffercolor"
 
@@ -151,7 +149,7 @@ red=$'\033[0;31m'
 green=$'\033[0;32m'
 nc=$'\033[0m'
 
-# Création si ça n'est pas déjà fait des buffer
+# Create buffers if not already done
 if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
     echo "Init..."
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffer"
@@ -160,7 +158,7 @@ if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
 fi
 
 
-OPTS=$(getopt -o lcra:e:p:h --long list,listcolor,reset,add:,empty:,print:,help -n 'main.sh' -- "$@") || return 1
+OPTS=$(getopt -o lcra:e:p:h --long list,listcolor,reset,uninstall,add:,empty:,print:,help -n 'main.sh' -- "$@") || return 1
 
 # If can't get options
 if [ $? -ne 0 ]; then
@@ -269,4 +267,33 @@ fi
 _cdb_uninstall() {
 	#TODO
 	echo "Uninstalling cdb..."
+	text_confirmation="Are you sure you want to uninstall cdb commandlet ? (Y/N) : "
+	case $ACT_SHELL in
+        zsh)    vared -p $text_confirmation -c answer; SHELL_RC=$HOME/.zshrc ;;
+        bash)   read -r -p $text_confirmation answer; SHELL_RC=$HOME/.bashrc ;;
+    esac
+
+
+	case $answer in
+	[Yy]*)
+	    echo "Removing cdb commandlet from $SHELL_RC..."
+	    sed -i '/# Start of cdb commandlet/,/# End of cdb commandlet/d' "$SHELL_RC"
+		echo "Removing cdbuffer and cdbuffercolor files..."
+	    rm -f "$cdbuffer" "$cdbuffercolor"
+	    echo "Removing cdbuffer.sh from $SCRIPT_DIR..."
+	    rm -f "$cdbuffersh"
+	    # Functions loaded in the current shell survive removal of the startup
+	    # file, so remove the command from this shell as well.
+	    unset -f cdb _cdb_internal 2>/dev/null
+	    unalias cdb 2>/dev/null
+	    echo "Uninstallation completed."
+	    ;;
+	[Nn]*)
+		echo "Uninstallation cancelled."
+	    ;;
+	*)
+	    echo "Please restart the procedure and answer with Y or N."
+	    ;;
+    esac
+
 }
