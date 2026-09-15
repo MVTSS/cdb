@@ -41,9 +41,10 @@ echo "Installation of cdb in $SHELL_RC..."
 # - Check if installed in another shell (remove duplicate)
 # - Check if the cdbuffer_script is the same as in the shell => wrong source if double install / update
 
-CURRENT_CDB_PATH=$(grep -A1 "# For cdb commandlet" "$SHELL_RC" | grep "^source " | awk '{print $2}')
+CURRENT_CDB=$(grep -A1 "# For cdb commandlet" "$SHELL_RC" | grep "^source " | awk '{print $2}')
+CURRENT_CDB_PATH="$(dirname -- "$CURRENT_CDB")"
 
-if [ -z "$CURRENT_CDB_PATH" ]; then
+if [ -z "$CURRENT_CDB" ]; then
     echo "cdb is not configured in $SHELL_RC."
         cat << EOF >> "$SHELL_RC"
 
@@ -54,8 +55,8 @@ cdb() {
 }
 EOF
     echo "Configuration added with success in $SHELL_RC !"
-elif [ $CURRENT_CDB_PATH != $CDBUFFER_SCRIPT ]; then
-    echo "cdb is already configured in $SHELL_RC but with a different path : $CURRENT_CDB_PATH"
+elif [ "$CURRENT_CDB" != "$CDBUFFER_SCRIPT" ]; then
+    echo "cdb is already configured in $SHELL_RC but with a different path : $CURRENT_CDB"
     CDB_CONFIG_LINES=$(sed -n '/^# For cdb commandlet/,/^}$/p' "$SHELL_RC" | wc -l)
     if [ "$CDB_CONFIG_LINES" -ne 5 ]; then
         echo "Error : the cdb configuration contains $CDB_CONFIG_LINES lines instead of 5 ; update cancelled."
@@ -71,24 +72,23 @@ cdb() {
 }
 EOF
     echo "Configuration updated with success in $SHELL_RC !"
-    echo "Moving existing cdbuffer.sh, cdbuffer and cdbuffercolor from $CURRENT_CDB_PATH to $CDBUFFER_SCRIPT..."
-    if [ -f "$CURRENT_CDB_PATH" ]; then
-        mv "$CURRENT_CDB_PATH" "$CDBUFFER_SCRIPT"
+    echo "Moving existing cdbuffer.sh, cdbuffer and cdbuffercolor from $CURRENT_CDB_PATH to $TARGET_DIR..."
+    if [ -f "$CURRENT_CDB" ]; then
+        mv "$CURRENT_CDB" "$CDBUFFER_SCRIPT"
         echo "=> Moved existing cdbuffer.sh to $CDBUFFER_SCRIPT"
     fi
-    if [ -f "$(dirname "$CURRENT_CDB_PATH")/cdbuffer" ]; then
-        mv "$(dirname "$CURRENT_CDB_PATH")/cdbuffer" "$(dirname "$CDBUFFER_SCRIPT")/cdbuffer"
-        echo "=> Moved existing cdbuffer to $CDBUFFER_SCRIPT"
+    if [ -f "$CURRENT_CDB_PATH/cdbuffer" ]; then
+        mv "$CURRENT_CDB_PATH/cdbuffer" "$TARGET_DIR/cdbuffer"
+        echo "=> Moved existing cdbuffer to $TARGET_DIR/cdbuffer"
     fi
-    if [ -f "$(dirname "$CURRENT_CDB_PATH")/cdbuffercolor" ]; then
-        mv "$(dirname "$CURRENT_CDB_PATH")/cdbuffercolor" "$(dirname "$CDBUFFER_SCRIPT")/cdbuffercolor"
-        echo "=> Moved existing cdbuffercolor to $CDBUFFER_SCRIPT"
+    if [ -f "$CURRENT_CDB_PATH/cdbuffercolor" ]; then
+        mv "$CURRENT_CDB_PATH/cdbuffercolor" "$TARGET_DIR/cdbuffercolor"
+        echo "=> Moved existing cdbuffercolor to $TARGET_DIR/cdbuffercolor"
     fi
 
 else
     echo "cdb is already configured in $SHELL_RC."
     echo "Updating cdbuffer.sh in $CDBUFFER_SCRIPT..."
-    cp "$SRC_SCRIPT" "$CDBUFFER_SCRIPT"
 fi
 
 
