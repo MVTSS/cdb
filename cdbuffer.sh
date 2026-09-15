@@ -10,11 +10,11 @@
 _cdb_internal() {
     usage() {
 	cat << EOF
-	Usage: $0 [OPTIONS] [NUM]
+Usage: $0 [OPTIONS] [NUM]
 
-	"cd" command with macros of path to get quicker to often-used path.
+"cd" command with macros of path to get quicker to often-used path.
 
-	Options:
+Options:
 	-l, --list		List of all macros and their associated path
 	-c, --listcolor		List all macros but with colors
 	-a, --add		Add a path to a macro
@@ -23,22 +23,24 @@ _cdb_internal() {
 	-p, --print		Print the path associated to the macro. Useful as a substitution for pwd.
 	-h, --help		Print this message
 
-	Examples:
+Examples:
 	cdb 1
-	Go to the path associated to macro 1
+	=> Go to the path associated to macro 1
 	cdb -a 1:/path/to/remember
-	Add /path/to/remember to the macro 1
+	=> Add /path/to/remember to the macro 1
 	cdb -e 1
-	Empty macro 1
+	=> Empty macro 1
 EOF
 	return 0
     }
 
 confirmation() {
     IS_OK=false
-    #read -r -p "Are you sure ? (Y/N) : " answer
-    #Better for zsh
-    vared -p "Are you sure ? (Y/N) : " -c answer
+    case $ACT_SHELL in
+        zsh)    vared -p "Are you sure ? (Y/N) : " -c answer ;;
+        bash)   read -r -p "Are you sure ? (Y/N) : " answer ;;
+    esac
+
     case $answer in
 	[Yy]*)
 	    IS_OK=true
@@ -65,14 +67,16 @@ list_func() {
 
 add_func() {
     #Remplace le ~ par $HOME pour ne pas trigger le -d (il est sensible)
-    MPATH=${~MPATH}
-    #MPATH=${MPATH/#~/$HOME}
+    case $ACT_SHELL in
+        zsh)    MPATH=${~MPATH} ;;
+        bash)   MPATH=${MPATH/#~/$HOME} ;;
+    esac
     if [ -d "$MPATH" ]; then
-	sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
-	sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
+	    sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
+	    sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
     else
-	echo "The directory you try to assign (${MPATH}) doesn't exist."
-	return 1
+	    echo "The directory you try to assign (${MPATH}) doesn't exist."
+	    return 1
     fi
     return 1
 }
@@ -81,8 +85,8 @@ add_func() {
 empty_func() {
     confirmation
     if [ $IS_OK = true ]; then
-	sed -i "${LINE}c\\${red}${LINE}: [None] ${nc}" $cdbuffercolor
-	sed -i "${LINE}c\\${LINE}: [None]" $cdbuffer
+	    sed -i "${LINE}c\\${red}${LINE}: [None] ${nc}" $cdbuffercolor
+	    sed -i "${LINE}c\\${LINE}: [None]" $cdbuffer
     fi
     return 0
 }
@@ -115,14 +119,14 @@ goto() {
 
 
     if [ -d $MPATH ]; then
-	echo "cd $MPATH"
-	cd $MPATH
-	return 0
+	    echo "cd $MPATH"
+	    cd $MPATH
+	    return 0
     else
-	echo "There's no path associated to that macro"
-	return 0
+	    echo "There's no path associated to that macro"
+	    return 0
     fi
-    # Au cas où ça dérape
+    
     return 1
 }
 
@@ -132,9 +136,20 @@ goto() {
 SCRIPT_PATH="${BASH_SOURCE[0]:-${(%):-%x}}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "$SCRIPT_PATH")" && pwd)"
 
+# Check if zsh or bash
+case "$(basename "$SHELL")" in
+    zsh)    ACT_SHELL="zsh" ;;
+    bash)   ACT_SHELL="bash" ;;
+    *)      echo "Error : cdb is only available with bash or zsh at the moment."; exit 1; ;;
+esac
 
 cdbuffer="${SCRIPT_DIR}/cdbuffer"
 cdbuffercolor="${SCRIPT_DIR}/cdbuffercolor"
+
+# Color used
+red=$'\033[0;31m'
+green=$'\033[0;32m'
+nc=$'\033[0m'
 
 # Création si ça n'est pas déjà fait des buffer
 if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
@@ -167,10 +182,6 @@ if [ $count -gt 1 ]; then
     return 1
 fi
 
-# Color used
-red=$'\033[0;31m'
-green=$'\033[0;32m'
-nc=$'\033[0m'
 
 help=0
 
