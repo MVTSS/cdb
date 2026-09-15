@@ -28,6 +28,7 @@ This script:
 - makes `cdbuffer.sh` executable
 - adds the required `source` command to your shell configuration (`.bashrc` or `.zshrc`)
 - defines the `cdb` function for interactive use
+- Update the current `cdb` function you have to the new version if you already have it installed
 
 Then reload your shell:
 
@@ -52,6 +53,16 @@ This stores the directory `$HOME/projects/my-app` under macro `1` and moves to i
 - `cdbuffer`: plain text storage of saved paths
 - `cdbuffercolor`: colorized bookmark listing
 - `install.sh`: installation script
+
+## Uninstallation
+
+To uninstall `cdb`, run the following command:
+
+```bash
+cdb --uninstall
+```
+
+It will prompt you for confirmation before removing the `cdb` function and its associated files from your system.
 
 ## Notes
 
