@@ -4,7 +4,7 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-${(%):-%x}}")" && pwd)"
 SRC_SCRIPT="${SCRIPT_DIR}/cdbuffer.sh"
 
 # check shell
-case "$(basename "$SHELL")" in
+case "$(basename -- "$SHELL")" in
     zsh)    SHELL_RC="${HOME}/.zshrc" ;;
     bash)   SHELL_RC="${HOME}/.bashrc" ;;
     *)      echo "Error : cdb is only available with bash or zsh at the moment."; exit 1; ;;
@@ -48,28 +48,27 @@ if [ -z "$CURRENT_CDB" ]; then
     echo "cdb is not configured in $SHELL_RC."
         cat << EOF >> "$SHELL_RC"
 
-# For cdb commandlet
+# Start of cdb commandlet
 source ${CDBUFFER_SCRIPT}
 cdb() {
     _cdb_internal "\$@"
 }
+# End of cdb commandlet
+
 EOF
     echo "Configuration added with success in $SHELL_RC !"
 elif [ "$CURRENT_CDB" != "$CDBUFFER_SCRIPT" ]; then
     echo "cdb is already configured in $SHELL_RC but with a different path : $CURRENT_CDB"
-    CDB_CONFIG_LINES=$(sed -n '/^# For cdb commandlet/,/^}$/p' "$SHELL_RC" | wc -l)
-    if [ "$CDB_CONFIG_LINES" -ne 5 ]; then
-        echo "Error : the cdb configuration contains $CDB_CONFIG_LINES lines instead of 5 ; update cancelled."
-        echo "You may need to manually update the configuration in $SHELL_RC."
-        exit 1
-    fi
-    sed -i '/^# For cdb commandlet/,/^}$/d' "$SHELL_RC"
+    sed -i '/^# Start of cdb commandlet/,/^# End of cdb commandlet/d' "$SHELL_RC"
     cat << EOF >> "$SHELL_RC"
-# For cdb commandlet
+
+# Start of cdb commandlet
 source ${CDBUFFER_SCRIPT}
 cdb() {
     _cdb_internal "\$@"
 }
+# End of cdb commandlet
+
 EOF
     echo "Configuration updated with success in $SHELL_RC !"
     echo "Moving existing cdbuffer.sh, cdbuffer and cdbuffercolor from $CURRENT_CDB_PATH to $TARGET_DIR..."

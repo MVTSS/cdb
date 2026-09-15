@@ -235,6 +235,10 @@ while true; do
 		is_param=1
 	    shift
 	    ;;
+	--uninstall)
+		_cdb_uninstall
+		return
+	    ;;
 	--)
 	    shift
 	    break
@@ -260,4 +264,9 @@ if [ $# -eq 0 ] && [ $is_param -eq 0 ]; then
     list_func_color
     return 0
 fi
+}
+
+_cdb_uninstall() {
+	#TODO
+	echo "Uninstalling cdb..."
 }
