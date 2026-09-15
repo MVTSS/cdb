@@ -41,7 +41,7 @@ echo "Installation of cdb in $SHELL_RC..."
 # - Check if installed in another shell (remove duplicate)
 # - Check if the cdbuffer_script is the same as in the shell => wrong source if double install / update
 
-CURRENT_CDB=$(grep -A1 "# For cdb commandlet" "$SHELL_RC" | grep "^source " | awk '{print $2}')
+CURRENT_CDB=$(grep -A1 "# Start of cdb commandlet" "$SHELL_RC" | grep "^source " | awk '{print $2}')
 CURRENT_CDB_PATH="$(dirname -- "$CURRENT_CDB")"
 
 if [ -z "$CURRENT_CDB" ]; then
