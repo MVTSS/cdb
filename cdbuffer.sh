@@ -182,23 +182,34 @@ if [ $count -gt 1 ]; then
     return 1
 fi
 
-
-help=0
+is_param=0
 
 while true; do
     case "$1" in
 	-a | --add)
+		if [ $# -lt 3 ]; then
+		    echo "You need to specify a macro and a path to add."
+		    return 1
+		fi
 	    IFS=':' read -r LINE MPATH <<< "$2" || return 1
 	    MPATH="$MPATH"
 	    add_func
 	    shift 2
 	    ;;
 	-e | --empty)
+	    if [ $# -lt 2 ]; then
+	        echo "You need to specify a macro to empty."
+	        return 1
+	    fi
 	    LINE=$2
 	    empty_func
 	    shift 2
 	    ;;
 	-p | --print)
+		if [ $# -lt 2 ]; then
+	        echo "You need to specify a macro to print."
+	        return 1
+	    fi
 	    LINE=$2
 	    print_func
 	    return 0
@@ -206,19 +217,22 @@ while true; do
 	    ;;
 	-l | --list) 
 	    list_func
+		is_param=1
 	    shift
 	    ;;
 	-c | --listcolor)
 	    list_func_color
+		is_param=1
 	    shift
 	    ;;
 	-r | --reset)
 	    reset_func
+		is_param=1
 	    shift
 	    ;;
 	-h | --help) 
 	    usage
-	    help=1
+		is_param=1
 	    shift
 	    ;;
 	--)
@@ -242,7 +256,7 @@ if [ $# -gt 1 ]; then
     return 1
 fi
 
-if [ $# -eq 0 ] && [ $help -eq 0 ]; then
+if [ $# -eq 0 ] && [ $is_param -eq 0 ]; then
     list_func_color
     return 0
 fi
