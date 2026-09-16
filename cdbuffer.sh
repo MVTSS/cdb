@@ -112,7 +112,7 @@ add_func() {
 
 	echo "Macro $LINE has been set to $MPATH"
 
-    return 1
+    return 0
 }
 
 
@@ -132,13 +132,22 @@ empty_func() {
 
 
 reset_func() {
-    confirmation
-    if [ $IS_OK = true ]; then
-	for i in $(seq 1 9); do
-	    sed -i "${i}c\\${red}${i}: [None] ${nc}" $cdbuffercolor
-	    sed -i "${i}c\\${i}: [None]" $cdbuffer
-	done
-    fi
+	if [ $1 -eq 0 ]; then
+    	confirmation
+	fi
+	
+    if [[ $IS_OK = true ]]; then
+		: > "$cdbuffercolor"
+		: > "$cdbuffer"
+		for i in $(seq 1 9); do
+			printf '%s%s: [None] %s\n' "$red" "$i" "$nc" >> "$cdbuffercolor"
+			printf '%s: [None]\n' "$i" >> "$cdbuffer"
+		done
+		echo "All macros have been reset."
+    else
+		echo "Reset cancelled."
+		return 1
+	fi
     return 0
 }
 
@@ -186,6 +195,7 @@ goto() {
 
 SCRIPT_PATH="${BASH_SOURCE[0]:-${(%):-%x}}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "$SCRIPT_PATH")" && pwd)"
+is_param=0
 
 # Check if zsh or bash
 case "$(basename "$SHELL")" in
@@ -208,8 +218,25 @@ if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
     echo "Init..."
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffer"
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffercolor"
-    reset_func
+	validate=1
+    reset_func $validate
 fi
+
+# Check if buffer files have either [None] or a path associated to them, if not, reset all macros
+for i in $(seq 1 9); do
+	line_file=$(sed -n "${i}p" $cdbuffer)
+	IFS=':' read -r LINE MPATH <<< "$line_file" || return 1
+	# Rid of useless space
+	MPATH="${MPATH# }"
+	if [ "$MPATH" != "[None]" ] && [ ! -d "$MPATH" ]; then
+		echo "Macro $LINE has an invalid path associated to it. Resetting all macros."
+		echo "Do not write anything in the buffer files, they will be reset otherwise."
+		validate=1
+		reset_func $validate
+		is_param=1
+		break
+	fi
+done
 
 
 OPTS=$(getopt -o lcra:e:p:h --long list,listcolor,reset,uninstall,add:,empty:,print:,help -n 'cdb' -- "$@") || return 1
@@ -234,7 +261,6 @@ if [ $count -gt 1 ]; then
     return 1
 fi
 
-is_param=0
 
 while true; do
     case "$1" in
@@ -273,7 +299,11 @@ while true; do
 	    shift
 	    ;;
 	-r | --reset)
-	    reset_func
+		validate=0
+	    reset_func $validate
+		if [ $? -ne 0 ]; then
+			return 1
+		fi
 		is_param=1
 	    shift
 	    ;;
