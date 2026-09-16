@@ -191,7 +191,16 @@ goto() {
 }
 
 
+lock_buffers() {
+	chmod a-w "$cdbuffer" "$cdbuffercolor"
+}
+
+unlock_buffers() {
+	chmod u+w "$cdbuffer" "$cdbuffercolor"
+}
+
 # END FUNCTIONS ################################
+
 
 SCRIPT_PATH="${BASH_SOURCE[0]:-${(%):-%x}}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "$SCRIPT_PATH")" && pwd)"
@@ -208,6 +217,10 @@ cdbuffersh="${SCRIPT_DIR}/cdbuffer.sh"
 cdbuffer="${SCRIPT_DIR}/cdbuffer"
 cdbuffercolor="${SCRIPT_DIR}/cdbuffercolor"
 
+# Initial lock of the buffers
+lock_buffers
+
+
 # Color used
 red=$'\033[0;31m'
 green=$'\033[0;32m'
@@ -216,10 +229,12 @@ nc=$'\033[0m'
 # Create buffers if not already done
 if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
     echo "Init..."
+	unlock_buffers
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffer"
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffercolor"
 	validate=1
     reset_func $validate
+	lock_buffers
 fi
 
 # Check if buffer files have either [None] or a path associated to them, if not, reset all macros
@@ -231,8 +246,10 @@ for i in $(seq 1 9); do
 	if [ "$MPATH" != "[None]" ] && [ ! -d "$MPATH" ]; then
 		echo "Macro $LINE has an invalid path associated to it. Resetting all macros."
 		echo "Do not write anything in the buffer files, they will be reset otherwise."
+		unlock_buffers
 		validate=1
 		reset_func $validate
+		lock_buffers
 		is_param=1
 		break
 	fi
@@ -267,14 +284,19 @@ while true; do
 	-a | --add)
 		#$1 => -a
 		#$2 => macro:path
+		unlock_buffers
 	    add_func $# $2
+		lock_buffers
 		if [ $? -ne 0 ]; then
 			return 1
 		fi
+		is_param=1
 	    shift 2
 	    ;;
 	-e | --empty)
+		unlock_buffers
 	    empty_func $# $2
+		lock_buffers
 		if [ $? -ne 0 ]; then
 			return 1
 		fi
@@ -300,7 +322,9 @@ while true; do
 	    ;;
 	-r | --reset)
 		validate=0
+		unlock_buffers
 	    reset_func $validate
+		lock_buffers
 		if [ $? -ne 0 ]; then
 			return 1
 		fi
