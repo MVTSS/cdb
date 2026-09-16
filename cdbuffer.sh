@@ -9,22 +9,24 @@ Usage: $0 [OPTIONS] [NUM]
 "cd" command with macros of path to get quicker to often-used path.
 
 Options:
-	-l, --list		List of all macros and their associated path
+	-l, --list			List of all macros and their associated path
 	-c, --listcolor		List all macros but with colors
-	-a, --add		Add a path to a macro
-	-e, --empty		Empty a macro
-	-r, --reset		Empty all macros
-	-p, --print		Print the path associated to the macro. Useful as a substitution for pwd.
-	-h, --help		Print this message
-	--uninstall		Uninstall cdb
+	-a, --add			Add a path to a macro
+	-e, --empty			Empty a macro
+	-r, --reset			Empty all macros
+	-p, --print			Print the path associated to the macro. Useful as a substitution for pwd.
+	-h, --help			Print this message
+	--uninstall			Uninstall cdb
 
 Examples:
-	cdb 1
-	=> Go to the path associated to macro 1
-	cdb -a 1:/path/to/remember
-	=> Add /path/to/remember to the macro 1
-	cdb -e 1
-	=> Empty macro 1
+> cdb 1
+Go to the path associated to macro 1
+
+> cdb -a 1:/path/to/remember
+Add /path/to/remember to the macro 1
+
+> cdb -e 1
+Empty macro 1
 EOF
 	return 0
     }
@@ -63,23 +65,63 @@ list_func() {
 
 
 add_func() {
-	# Replace the ~ by $HOME to not trigger the -d (sensible)
-    case $ACT_SHELL in
-        zsh)    MPATH=${~MPATH} ;;
-        bash)   MPATH=${MPATH/#~/$HOME} ;;
-    esac
-    if [ -d "$MPATH" ]; then
-	    sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
-	    sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
-    else
-	    echo "The directory you try to assign (${MPATH}) doesn't exist."
-	    return 1
-    fi
+	# Check if the user has specified a macro and a path
+	NBPARAM=$1
+	MACROPATH=$2
+	if [ $NBPARAM -lt 3 ] || [ -z "$MACROPATH" ]; then
+		echo "You need to specify a macro and a path to add : cdb -a <macro>:<path>"
+		return 1
+	fi
+	IFS=':' read -r LINE MPATH <<< "$MACROPATH" || return 1
+	# Check if path is empty or macro is empty
+	if [ -z "$MPATH" ]; then
+		echo "You need to specify a macro and a path to add : no path specified."
+		return 1
+	elif [ -z "$LINE" ]; then
+		echo "You need to specify a macro and a path to add : no macro specified."
+		return 1
+	fi
+
+	# Check if the macro is between 1 and 9
+	if [ $LINE -lt 1 ] || [ $LINE -gt 9 ]; then
+		echo "You need to specify a macro between 1 and 9."
+		return 1
+	fi
+
+	# Convert any relative path (for example, perso/test) to an absolute path.
+	if [[ "$MPATH" != /* ]]; then
+		if [[ "$MPATH" == ~* ]]; then
+			# Replace the ~ by $HOME to not trigger the -d (sensible)
+			case $ACT_SHELL in
+				zsh)    MPATH=${~MPATH} ;;
+				bash)   MPATH=${MPATH/#~/$HOME} ;;
+			esac
+		fi
+
+		if [ -d "$MPATH" ]; then
+			MPATH="$(cd "$MPATH" && pwd)"
+		fi
+	else
+		echo "The directory you try to assign (${MPATH}) doesn't exist."
+		return 1
+	fi
+	MPATH="$MPATH"
+
+	sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
+	sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
+
+	echo "Macro $LINE has been set to $MPATH"
+
     return 1
 }
 
 
 empty_func() {
+	if [ $1 -lt 2 ]; then
+		echo "You need to specify a macro to empty."
+		return 1
+	fi
+	LINE=$2
     confirmation
     if [ $IS_OK = true ]; then
 	    sed -i "${LINE}c\\${red}${LINE}: [None] ${nc}" $cdbuffercolor
@@ -102,8 +144,20 @@ reset_func() {
 
 
 print_func() {
+	if [ $1 -lt 2 ]; then
+		echo "You need to specify a macro to print."
+		return 1
+	fi
+	LINE=$2
+
     line_file=$(sed -n "${LINE}p" $cdbuffer)
     IFS=':' read -r LINE MPATH <<< "$line_file" || return 1
+	#remove useless space
+	MPATH="${MPATH# }"
+	if [ "$MPATH" == "[None]" ]; then
+		echo "There's no path associated to that macro"
+		return 1
+	fi
     echo $MPATH
     return 0
 }
@@ -158,7 +212,7 @@ if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
 fi
 
 
-OPTS=$(getopt -o lcra:e:p:h --long list,listcolor,reset,uninstall,add:,empty:,print:,help -n 'main.sh' -- "$@") || return 1
+OPTS=$(getopt -o lcra:e:p:h --long list,listcolor,reset,uninstall,add:,empty:,print:,help -n 'cdb' -- "$@") || return 1
 
 # If can't get options
 if [ $? -ne 0 ]; then
@@ -185,31 +239,26 @@ is_param=0
 while true; do
     case "$1" in
 	-a | --add)
-		if [ $# -lt 3 ]; then
-		    echo "You need to specify a macro and a path to add."
-		    return 1
+		#$1 => -a
+		#$2 => macro:path
+	    add_func $# $2
+		if [ $? -ne 0 ]; then
+			return 1
 		fi
-	    IFS=':' read -r LINE MPATH <<< "$2" || return 1
-	    MPATH="$MPATH"
-	    add_func
 	    shift 2
 	    ;;
 	-e | --empty)
-	    if [ $# -lt 2 ]; then
-	        echo "You need to specify a macro to empty."
-	        return 1
-	    fi
-	    LINE=$2
-	    empty_func
+	    empty_func $# $2
+		if [ $? -ne 0 ]; then
+			return 1
+		fi
 	    shift 2
 	    ;;
 	-p | --print)
-		if [ $# -lt 2 ]; then
-	        echo "You need to specify a macro to print."
-	        return 1
-	    fi
-	    LINE=$2
-	    print_func
+	    print_func $# $2
+		if [ $? -ne 0 ]; then
+			return 1
+		fi
 	    return 0
 	    shift 2
 	    ;;
@@ -235,7 +284,7 @@ while true; do
 	    ;;
 	--uninstall)
 		_cdb_uninstall
-		return
+		return 0
 	    ;;
 	--)
 	    shift
