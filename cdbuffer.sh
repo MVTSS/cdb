@@ -41,6 +41,7 @@ confirmation() {
     case $answer in
 	[Yy]*)
 	    IS_OK=true
+		is_param=1
 	    ;;
 	[Nn]*)
 		is_param=1
@@ -122,11 +123,16 @@ empty_func() {
 		return 1
 	fi
 	LINE=$2
+	echo "You'll empty macro $LINE ($(sed -n "${LINE}p" $cdbuffer | cut -d ':' -f 2))"
     confirmation
     if [ $IS_OK = true ]; then
 	    sed -i "${LINE}c\\${red}${LINE}: [None] ${nc}" $cdbuffercolor
 	    sed -i "${LINE}c\\${LINE}: [None]" $cdbuffer
-    fi
+		echo "Macro $LINE has been emptied."
+    else
+		echo "Emptying macro $LINE cancelled."
+		return 1
+	fi
     return 0
 }
 
@@ -192,11 +198,15 @@ goto() {
 
 
 lock_buffers() {
+	status=$?
 	chmod a-w "$cdbuffer" "$cdbuffercolor"
+	return $status
 }
 
 unlock_buffers() {
+	status=$?
 	chmod u+w "$cdbuffer" "$cdbuffercolor"
+	return $status
 }
 
 # END FUNCTIONS ################################
@@ -300,6 +310,7 @@ while true; do
 		if [ $? -ne 0 ]; then
 			return 1
 		fi
+		is_param=1
 	    shift 2
 	    ;;
 	-p | --print)
