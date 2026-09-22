@@ -84,10 +84,6 @@ EOF
         mv "$CURRENT_CDB_PATH/cdbuffercolor" "$TARGET_DIR/cdbuffercolor"
         echo "=> Moved existing cdbuffercolor to $TARGET_DIR/cdbuffercolor"
     fi
-
-else
-    echo "cdb is already configured in $SHELL_RC."
-    echo "Updating cdbuffer.sh in $CDBUFFER_SCRIPT..."
 fi
 
 

@@ -142,7 +142,7 @@ reset_func() {
     	confirmation
 	fi
 	
-    if [[ $IS_OK = true ]]; then
+    if [[ $IS_OK = true || $1 -eq 1 ]]; then
 		: > "$cdbuffercolor"
 		: > "$cdbuffer"
 		for i in $(seq 1 9); do
@@ -198,15 +198,15 @@ goto() {
 
 
 lock_buffers() {
-	status=$?
+	prestatus=$?
 	chmod a-w "$cdbuffer" "$cdbuffercolor"
-	return $status
+	return $prestatus
 }
 
 unlock_buffers() {
-	status=$?
+	prestatus=$?
 	chmod u+w "$cdbuffer" "$cdbuffercolor"
-	return $status
+	return $prestatus
 }
 
 # END FUNCTIONS ################################
@@ -227,10 +227,6 @@ cdbuffersh="${SCRIPT_DIR}/cdbuffer.sh"
 cdbuffer="${SCRIPT_DIR}/cdbuffer"
 cdbuffercolor="${SCRIPT_DIR}/cdbuffercolor"
 
-# Initial lock of the buffers
-lock_buffers
-
-
 # Color used
 red=$'\033[0;31m'
 green=$'\033[0;32m'
@@ -239,12 +235,11 @@ nc=$'\033[0m'
 # Create buffers if not already done
 if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
     echo "Init..."
-	unlock_buffers
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffer"
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffercolor"
-	validate=1
+    validate=1
     reset_func $validate
-	lock_buffers
+    lock_buffers
 fi
 
 # Check if buffer files have either [None] or a path associated to them, if not, reset all macros
@@ -292,25 +287,25 @@ fi
 while true; do
     case "$1" in
 	-a | --add)
-		#$1 => -a
-		#$2 => macro:path
-		unlock_buffers
+	    #$1 => -a
+	    #$2 => macro:path
+	    unlock_buffers
 	    add_func $# $2
-		lock_buffers
-		if [ $? -ne 0 ]; then
-			return 1
-		fi
-		is_param=1
+	    lock_buffers
+	    if [ $? -ne 0 ]; then
+	    	return 1
+	    fi
+	    is_param=1
 	    shift 2
 	    ;;
 	-e | --empty)
-		unlock_buffers
+	    unlock_buffers
 	    empty_func $# $2
-		lock_buffers
-		if [ $? -ne 0 ]; then
-			return 1
-		fi
-		is_param=1
+	    lock_buffers
+	    if [ $? -ne 0 ]; then
+	    	return 1
+	    fi
+	    is_param=1
 	    shift 2
 	    ;;
 	-p | --print)
