@@ -34,8 +34,8 @@ EOF
 confirmation() {
     IS_OK=false
     case $ACT_SHELL in
-        zsh)    vared -p "Are you sure ? (Y/N) : " -c answer ;;
-        bash)   read -r -p "Are you sure ? (Y/N) : " answer ;;
+        zsh)    vared -p "Are you sure ? (y/n) : " -c answer ;;
+        bash)   read -r -p "Are you sure ? (y/n) : " answer ;;
     esac
 
     case $answer in
@@ -90,7 +90,7 @@ add_func() {
 	fi
 
 	# Convert any relative path (for example, perso/test) to an absolute path.
-	if [[ "$MPATH" != /* ]]; then
+	if [[ "$MPATH" != /* || "$MPATH" == / ]]; then
 		if [[ "$MPATH" == ~* ]]; then
 			# Replace the ~ by $HOME to not trigger the -d (sensible)
 			case $ACT_SHELL in
