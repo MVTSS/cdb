@@ -90,7 +90,7 @@ add_func() {
 	fi
 
 	# Convert any relative path (for example, perso/test) to an absolute path.
-	if [[ "$MPATH" != /* || "$MPATH" == / ]]; then
+	if [ -d "$MPATH" ]; then
 		if [[ "$MPATH" == ~* ]]; then
 			# Replace the ~ by $HOME to not trigger the -d (sensible)
 			case $ACT_SHELL in
@@ -99,14 +99,11 @@ add_func() {
 			esac
 		fi
 
-		if [ -d "$MPATH" ]; then
-			MPATH="$(cd "$MPATH" && pwd)"
-		fi
+		MPATH="$(cd "$MPATH" && pwd)"
 	else
 		echo "The directory you try to assign (${MPATH}) doesn't exist."
 		return 1
 	fi
-	MPATH="$MPATH"
 
 	sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
 	sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
