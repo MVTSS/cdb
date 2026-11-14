@@ -1,4 +1,5 @@
 #!/usr/bin/env bash 
+# shellcheck disable=SC2296
 
 # START FUNCTIONS ##############################
 _cdb_internal() {
@@ -54,13 +55,13 @@ confirmation() {
 }
 
 list_func_color() {
-    cat $cdbuffercolor
+    cat "$cdbuffercolor"
     return 0
 }
 
 
 list_func() {
-    cat $cdbuffer
+    cat "$cdbuffer"
     return 0
 }
 
@@ -69,7 +70,7 @@ add_func() {
 	# Check if the user has specified a macro and a path
 	NBPARAM=$1
 	MACROPATH=$2
-	if [ $NBPARAM -lt 3 ] || [ -z "$MACROPATH" ]; then
+	if [ "$NBPARAM" -lt 3 ] || [ -z "$MACROPATH" ]; then
 		echo "You need to specify a macro and a path to add : cdb -a <macro>:<path>"
 		return 1
 	fi
@@ -84,7 +85,7 @@ add_func() {
 	fi
 
 	# Check if the macro is between 1 and 9
-	if [ $LINE -lt 1 ] || [ $LINE -gt 9 ]; then
+	if [ "$LINE" -lt 1 ] || [ "$LINE" -gt 9 ]; then
 		echo "You need to specify a macro between 1 and 9."
 		return 1
 	fi
@@ -105,8 +106,8 @@ add_func() {
 		return 1
 	fi
 
-	sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" $cdbuffercolor
-	sed -i "${LINE}c\\${LINE}: ${MPATH}" $cdbuffer
+	sed -i "${LINE}c\\${green}${LINE}: ${MPATH} ${nc}" "$cdbuffercolor"
+	sed -i "${LINE}c\\${LINE}: ${MPATH}" "$cdbuffer"
 
 	echo "Macro $LINE has been set to $MPATH"
 
@@ -115,16 +116,16 @@ add_func() {
 
 
 empty_func() {
-	if [ $1 -lt 2 ]; then
+	if [ "$1" -lt 2 ]; then
 		echo "You need to specify a macro to empty."
 		return 1
 	fi
 	LINE=$2
-	echo "You'll empty macro $LINE ($(sed -n "${LINE}p" $cdbuffer | cut -d ':' -f 2))"
+	echo "You'll empty macro $LINE ($(sed -n "${LINE}p" "$cdbuffer" | cut -d ':' -f 2))"
     confirmation
     if [ $IS_OK = true ]; then
-	    sed -i "${LINE}c\\${red}${LINE}: [None] ${nc}" $cdbuffercolor
-	    sed -i "${LINE}c\\${LINE}: [None]" $cdbuffer
+	    sed -i "${LINE}c\\${red}${LINE}: [None] ${nc}" "$cdbuffercolor"
+	    sed -i "${LINE}c\\${LINE}: [None]" "$cdbuffer"
 		echo "Macro $LINE has been emptied."
     else
 		echo "Emptying macro $LINE cancelled."
@@ -135,7 +136,7 @@ empty_func() {
 
 
 reset_func() {
-	if [ $1 -eq 0 ]; then
+	if [ "$1" -eq 0 ]; then
     	confirmation
 	fi
 	
@@ -156,13 +157,13 @@ reset_func() {
 
 
 print_func() {
-	if [ $1 -lt 2 ]; then
+	if [ "$1" -lt 2 ]; then
 		echo "You need to specify a macro to print."
 		return 1
 	fi
 	LINE=$2
 
-    line_file=$(sed -n "${LINE}p" $cdbuffer)
+    line_file=$(sed -n "${LINE}p" "$cdbuffer")
     IFS=':' read -r LINE MPATH <<< "$line_file" || return 1
 	#remove useless space
 	MPATH="${MPATH# }"
@@ -170,27 +171,25 @@ print_func() {
 		echo "There's no path associated to that macro"
 		return 1
 	fi
-    echo $MPATH
+    echo "$MPATH"
     return 0
 }
 
 goto() {
-    line_file=$(sed -n "${LINE}p" $cdbuffer)
+    line_file=$(sed -n "${LINE}p" "$cdbuffer")
     IFS=':' read -r LINE MPATH <<< "$line_file" || return 1
     # Rid of useless space
     MPATH="${MPATH# }"
 
 
-    if [ -d $MPATH ]; then
+    if [ -d "$MPATH" ]; then
 	    echo "cd $MPATH"
-	    cd $MPATH
+	    cd "$MPATH" || exit
 	    return 0
     else
 	    echo "There's no path associated to that macro"
 	    return 0
     fi
-    
-    return 1
 }
 
 
@@ -230,7 +229,7 @@ green=$'\033[0;32m'
 nc=$'\033[0m'
 
 # Create buffers if not already done
-if [ ! -f $cdbuffer ] || [ ! -f $cdbuffercolor ]; then
+if [ ! -f "$cdbuffer" ] || [ ! -f "$cdbuffercolor" ]; then
     echo "Init..."
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffer"
     echo -e "1\n2\n3\n4\n5\n6\n7\n8\n9" > "$cdbuffercolor"
@@ -241,7 +240,7 @@ fi
 
 # Check if buffer files have either [None] or a path associated to them, if not, reset all macros
 for i in $(seq 1 9); do
-	line_file=$(sed -n "${i}p" $cdbuffer)
+	line_file=$(sed -n "${i}p" "$cdbuffer")
 	IFS=':' read -r LINE MPATH <<< "$line_file" || return 1
 	# Rid of useless space
 	MPATH="${MPATH# }"
@@ -261,6 +260,7 @@ done
 OPTS=$(getopt -o lcra:e:p:h --long list,listcolor,reset,uninstall,add:,empty:,print:,help -n 'cdb' -- "$@") || return 1
 
 # If can't get options
+# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
     echo "Failed to parse options" >&2
     usage
@@ -287,9 +287,9 @@ while true; do
 	    #$1 => -a
 	    #$2 => macro:path
 	    unlock_buffers
-	    add_func $# $2
+	    add_func $# "$2"
 	    lock_buffers
-	    if [ $? -ne 0 ]; then
+        if ! lock_buffers; then
 	    	return 1
 	    fi
 	    is_param=1
@@ -297,9 +297,9 @@ while true; do
 	    ;;
 	-e | --empty)
 	    unlock_buffers
-	    empty_func $# $2
+	    empty_func $# "$2"
 	    lock_buffers
-	    if [ $? -ne 0 ]; then
+        if ! lock_buffers; then
 	    	return 1
 	    fi
 	    is_param=1
@@ -311,7 +311,6 @@ while true; do
 			return 1
 		fi
 	    return 0
-	    shift 2
 	    ;;
 	-l | --list) 
 	    list_func
@@ -327,8 +326,7 @@ while true; do
 		validate=0
 		unlock_buffers
 	    reset_func $validate
-		lock_buffers
-		if [ $? -ne 0 ]; then
+        if ! lock_buffers; then
 			return 1
 		fi
 		is_param=1
@@ -375,8 +373,8 @@ _cdb_uninstall() {
 	echo "Uninstalling cdb..."
 	text_confirmation="Are you sure you want to uninstall cdb commandlet ? (Y/N) : "
 	case $ACT_SHELL in
-        zsh)    vared -p $text_confirmation -c answer; SHELL_RC=$HOME/.zshrc ;;
-        bash)   read -r -p $text_confirmation answer; SHELL_RC=$HOME/.bashrc ;;
+        zsh)    vared -p "$text_confirmation" -c answer; SHELL_RC=$HOME/.zshrc ;;
+        bash)   read -r -p "$text_confirmation" answer; SHELL_RC=$HOME/.bashrc ;;
     esac
 
 
