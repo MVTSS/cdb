@@ -167,7 +167,7 @@ print_func() {
     IFS=':' read -r LINE MPATH <<< "$line_file" || return 1
 	#remove useless space
 	MPATH="${MPATH# }"
-	if [ "$MPATH" == "[None]" ]; then
+    if [ "$MPATH" = "[None]" ]; then
 		echo "There's no path associated to that macro"
 		return 1
 	fi
@@ -306,8 +306,7 @@ while true; do
 	    shift 2
 	    ;;
 	-p | --print)
-	    print_func $# $2
-		if [ $? -ne 0 ]; then
+	    if ! print_func $# "$2"; then
 			return 1
 		fi
 	    return 0
