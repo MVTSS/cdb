@@ -90,15 +90,16 @@ add_func() {
 		return 1
 	fi
 
+    # Replace the ~ by $HOME to not trigger the -d (sensible)
+    if [[ "$MPATH" == ~* ]]; then
+        case $ACT_SHELL in
+            zsh)    MPATH=${~MPATH} ;;
+            bash)   MPATH=${MPATH/#~/$HOME} ;;
+        esac
+    fi
+
 	# Convert any relative path (for example, perso/test) to an absolute path.
 	if [ -d "$MPATH" ]; then
-		if [[ "$MPATH" == ~* ]]; then
-			# Replace the ~ by $HOME to not trigger the -d (sensible)
-			case $ACT_SHELL in
-				zsh)    MPATH=${~MPATH} ;;
-				bash)   MPATH=${MPATH/#~/$HOME} ;;
-			esac
-		fi
 
 		MPATH="$(cd "$MPATH" && pwd)"
 	else

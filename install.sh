@@ -26,7 +26,7 @@ fi
 
 CDBUFFER_SCRIPT="${TARGET_DIR}/cdbuffer.sh"
 
-echo "Copie de cdbuffer.sh vers $CDBUFFER_SCRIPT..."
+echo "Copy of cdbuffer.sh to $CDBUFFER_SCRIPT..."
 if [ "$SRC_SCRIPT" != "$CDBUFFER_SCRIPT" ]; then
     cp "$SRC_SCRIPT" "$CDBUFFER_SCRIPT"
 fi
